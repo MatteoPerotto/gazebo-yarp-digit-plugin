@@ -95,8 +95,9 @@ class gazebo::ControlPlugin : public ModelPlugin,
         /* RPC port. */
         yarp::os::Port port_rpc_;
 
-        /* Gain of the controller. */
-        double p_gain_;
+        /* Gains of the controller. */
+        double p_gain_position_;
+        double p_gain_orientation_;
 
         std::mutex mutex_;
 

@@ -100,7 +100,7 @@ void gazebo::ControlPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     /* Load the gain parameter. */
     std::string gain;
 
-    if (!LoadParameterFromSDF(sdf, "Gain", gain))
+    if (!LoadParameterFromSDF(sdf, "GainPosition", gain))
     {
         yError() << "At line " << __LINE__ << ", in function " << __FUNCTION__ << ", error with Gain parameter. Closing the plugin thread.";
 
@@ -109,7 +109,25 @@ void gazebo::ControlPlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
     try
     {
-        p_gain_ = stoi(gain);
+        p_gain_position_ = stoi(gain);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+        yError() << "At line " << __LINE__ << ", in function " << __FUNCTION__ << ", invalid argument: " << ia.what() << ". Closing the plugin thread.";
+
+        std::terminate();
+    }
+
+    if (!LoadParameterFromSDF(sdf, "GainOrientation", gain))
+    {
+        yError() << "At line " << __LINE__ << ", in function " << __FUNCTION__ << ", error with Gain parameter. Closing the plugin thread.";
+
+        std::terminate();
+    }
+
+    try
+    {
+        p_gain_orientation_ = stoi(gain);
     }
     catch (const std::invalid_argument& ia)
     {
@@ -469,14 +487,14 @@ void gazebo::ControlPlugin::UpdateControl()
     if (is_control_on)
     {
         /* Apply the forces to the object. */
-        double controlX = p_gain_ * (desired_pose.X() - pose.X()) + 2 * std::sqrt(p_gain_) * (trajectory_generator_->GetLinearVelocityX() - velocity_vector.X());
-        double controlY = p_gain_ * (desired_pose.Y() - pose.Y()) + 2 * std::sqrt(p_gain_) * (trajectory_generator_->GetLinearVelocityY() - velocity_vector.Y());
-        double controlZ = p_gain_ * (desired_pose.Z() - pose.Z()) + 2 * std::sqrt(p_gain_) * (trajectory_generator_->GetLinearVelocityZ() - velocity_vector.Z());
+        double controlX = p_gain_position_ * (desired_pose.X() - pose.X()) + 2 * std::sqrt(p_gain_position_) * (trajectory_generator_->GetLinearVelocityX() - velocity_vector.X());
+        double controlY = p_gain_position_ * (desired_pose.Y() - pose.Y()) + 2 * std::sqrt(p_gain_position_) * (trajectory_generator_->GetLinearVelocityY() - velocity_vector.Y());
+        double controlZ = p_gain_position_ * (desired_pose.Z() - pose.Z()) + 2 * std::sqrt(p_gain_position_) * (trajectory_generator_->GetLinearVelocityZ() - velocity_vector.Z());
 
         object_model_->GetLink(link_name_)->SetForce(ignition::math::Vector3d(controlX, controlY, controlZ));
 
         /* Apply the torque to the body. */
-        object_model_->GetLink(link_name_)->SetTorque(p_gain_ * axis + 2 * std::sqrt(p_gain_) * (0 - velocity_vector_angular));
+        object_model_->GetLink(link_name_)->SetTorque(p_gain_orientation_ * axis + 2 * std::sqrt(p_gain_orientation_) * (0 - velocity_vector_angular));
     }
 
     ignition::math::Vector3<double> actual_axis;
